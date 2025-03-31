@@ -1,0 +1,18 @@
+{
+  "timestamp": "2025-03-31T16:01:06.577816",
+  "cities": [
+    "Bangkok",
+    "Chiang Mai",
+    "Phuket",
+    "Ayutthaya",
+    "Chonburi"
+  ],
+  "station_counts": {
+    "Bangkok": 21,
+    "Chiang Mai": 21,
+    "Phuket": 1,
+    "Ayutthaya": 1,
+    "Chonburi": 3
+  },
+  "total_stations": 47
+}
