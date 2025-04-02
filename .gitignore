@@ -3,5 +3,8 @@
 Cloud_funcations/Fetch_Data_aqicn/.env.example
 exec
 
+Cloud_funcations/Fetch_Data_aqicn/cloudbuild.yaml
+
+
 
 
