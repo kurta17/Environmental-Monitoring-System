@@ -1,5 +1,3 @@
-# Deployed from Google cloud platform with Wrtie function feature.
-
 import functions_framework
 import base64
 import json
@@ -72,17 +70,19 @@ def process_json_data(file_path):
     return rows_to_insert
 
 def append_to_bigquery(rows):
-    """Append processed rows to BigQuery."""
+    """Append processed rows to BigQuery without retries."""
     if not rows:
         logging.info("No valid rows to insert into BigQuery")
-        return
+        return True  # Success if no rows to insert
 
     table_ref = bq_client.dataset(DATASET_ID).table(TABLE_ID)
     errors = bq_client.insert_rows_json(table_ref, rows)
     if errors:
         logging.error(f"Errors inserting rows: {errors}")
+        raise Exception(f"Failed to insert rows into BigQuery: {errors}")
     else:
         logging.info(f"Successfully appended {len(rows)} rows to BigQuery")
+        return True
 
 @functions_framework.cloud_event
 def process_gcs_file(cloud_event):
@@ -93,18 +93,21 @@ def process_gcs_file(cloud_event):
         attributes = cloud_event.data["message"].get("attributes", {})
     except Exception as e:
         logging.error(f"Failed to decode Pub/Sub message: {e}")
-        return
+        return {"success": False}, 400  # Bad request, retry
 
     # Get GCS file path
     file_path = attributes.get("objectId")
     if not file_path:
         logging.error("No file path in Pub/Sub message")
-        return
+        return {"success": False}, 400  # Bad request, retry
 
     logging.info(f"Processing file: {file_path}")
 
     # Process and append data
     rows = process_json_data(file_path)
-    append_to_bigquery(rows)
-
-    return  # No return value needed for Cloud Events
+    try:
+        append_to_bigquery(rows)
+        return {"success": True}, 200  # Success, acknowledge message
+    except Exception as e:
+        logging.error(f"Failed to process file {file_path}: {e}")
+        return {"success": False}, 500  # Internal error, trigger Pub/Sub retry and DLQ after 5 attempts
